@@ -1,0 +1,11 @@
+.envrc
+/tmp/
+/.venv/
+/.idea/
+src/handlers/*/vendored/*
+!src/handlers/*/vendored/__init__.py
+template.yml
+src/handlers/toilet_data/config
+__pycache__/
+.pytest_cache/
+.coverage
