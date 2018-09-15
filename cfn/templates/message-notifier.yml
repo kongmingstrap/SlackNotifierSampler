@@ -1,0 +1,74 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Message Notifier Stack
+
+Parameters:
+  Env:
+    Type: String
+
+Resources:
+  IoTTopicRuleSNSPublishRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub iot-topic-rule-sns-publish-role-${Env}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: iot.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub iot-topic-rule-sns-publish-policy-${Env}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: "*"
+
+  MessageNotifierTriggerSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub message-notifier-trigger-sns-topic-${Env}
+
+  MessageNotifierTriggerSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref MessageNotifierTriggerSNSTopic
+      PolicyDocument:
+        Id: !Sub message-notifier-trigger-sns-topic-policy-${Env}
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: iot.amazonaws.com
+            Action: SNS:Publish
+            Resource: !Ref MessageNotifierTriggerSNSTopic
+
+  MessagekNotifierRule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      RuleName: !Sub message_notifier_${Env}
+      TopicRulePayload:
+        AwsIotSqlVersion: "2016-03-23"
+        RuleDisabled: false
+        Sql: |
+          SELECT *, topic(2) as device_id,
+            'message' as notifier_channel,
+            'Notifier' as slack_username,
+            ':white_check_mark:' as slack_icon_emoji,
+            concat(topic(2), ' from message.') as slack_text
+          FROM '/+/message'
+        Actions:
+          - Sns:
+              RoleArn: !GetAtt IoTTopicRuleSNSPublishRole.Arn
+              TargetArn: !Ref MessageNotifierTriggerSNSTopic
+
+Outputs:
+  MessageNotifierTriggerSNSTopicArn:
+    Value: !Ref MessageNotifierTriggerSNSTopic
+    Export:
+      Name: !Sub ${AWS::StackName}-MessageNotifierTriggerSNSTopicArn

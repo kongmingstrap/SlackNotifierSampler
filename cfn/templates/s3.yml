@@ -1,0 +1,18 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: S3 Stack
+
+Parameters:
+  Env:
+    Type: String
+
+Resources:
+  SAMArtifactBucket:
+    DeletionPolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub sns-awssam-artifacts-${AWS::AccountId}-${AWS::Region}-${Env}
+
+Outputs:
+  SAMArtifactBucketName:
+    Value: !Ref SAMArtifactBucket

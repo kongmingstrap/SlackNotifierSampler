@@ -1,0 +1,62 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM Stack
+
+Parameters:
+  Env:
+    Type: String
+
+  CircleCIDeployRoleExternalId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: CircleCIDeployRoleExternalId
+
+Resources:
+  SAMDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sam-deploy-role-${Env}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Path: !Sub /${AWS::StackName}/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  CircleCIDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub circle-ci-role-${Env}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:user/circle-ci
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref CircleCIDeployRoleExternalId
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+        - arn:aws:iam::aws:policy/AWSIoTConfigReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
+      Policies:
+        - PolicyName: CircleCIPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - iam:PassRole
+                Resource:
+                  - "*"
+
+Outputs:
+  SAMDeployRoleArn:
+    Value: !GetAtt SAMDeployRole.Arn
