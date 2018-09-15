@@ -1,0 +1,37 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Sempler Serverless Application Model
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Env:
+    Type: String
+
+  MessageHooksSlackURL:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: MessageHooksSlackURL
+
+Resources:
+  MessageNotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub sns-message-notifier-${Env}
+      Description: |
+        SNSへの通知をパブリッシュする
+      CodeUri: src/handlers/message_notifier
+      Handler: index.handler
+      Runtime: python3.6
+      AutoPublishAlias: !Ref Env
+      Timeout: 10
+      MemorySize: 128
+      Role:
+        Fn::ImportValue: !Sub sns-iam-${Env}-MessageNotifierRoleArn
+      Environment:
+        Variables:
+          MESSAGE_HOOKS_SLACK_URL: !Ref MessageHooksSlackURL
+      Events:
+        Dispatcher:
+          Type: SNS
+          Properties:
+            Topic:
+              Fn::ImportValue: !Sub sns-message-notifier-${Env}-MessageNotifierTriggerSNSTopicArn

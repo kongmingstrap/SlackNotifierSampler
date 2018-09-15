@@ -1,0 +1,169 @@
+version: 2
+
+references:
+  guess_and_deploy_container: &guess_and_deploy_container
+    docker:
+      - image: circleci/python:3.6.5-stretch-node
+
+  build_and_test_container: &build_and_test_container
+    docker:
+      - image: circleci/python:3.6.5-stretch-node
+      - image: localstack/localstack
+
+  workspace_aws_envs: &workspace_aws_envs ./
+
+  persist_to_workspace_aws_envs: &persist_to_workspace_aws_envs
+    persist_to_workspace:
+      root: *workspace_aws_envs
+      paths:
+        - aws-envs.sh
+
+  workspace_build_artifacts: &workspace_build_artifacts ./
+
+  persist_to_workspace_build_artifacts: &persist_to_workspace_build_artifacts
+    persist_to_workspace:
+      root: *workspace_build_artifacts
+      paths:
+        - src/handlers/*/vendored/**
+
+  deploy_to_aws: &deploy_to_aws
+    deploy:
+      name: Deploy to aws
+      command: |
+        set -x
+
+        source aws-envs.sh
+        source .venv/bin/activate
+        make deploy
+
+  assume_role_and_save_credentials: &assume_role_and_save_credentials
+    run:
+      name: Assume role and save credentials
+      command: |
+        set -x
+
+        source aws-envs.sh
+        source .venv/bin/activate
+        ./assume.sh
+
+jobs:
+  guess_and_save_deploy_envs:
+    <<: *guess_and_deploy_container
+    steps:
+      - checkout
+      - run:
+          name: Guess and save deploy envs
+          command: |
+            set -x
+
+            ./guess.sh
+      - <<: *persist_to_workspace_aws_envs
+
+  build_and_test_unit:
+    <<: *build_and_test_container
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: *workspace_aws_envs
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ .Branch }}-{{ checksum "Pipfile" }}-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: Install dependencies
+          command: |
+            set -x
+
+            python3 -m venv .venv
+            source .venv/bin/activate
+            pip install pipenv==2018.7.1
+            pipenv install
+      - save_cache:
+          paths:
+            - .venv
+          key: v1-dependencies-{{ .Branch }}-{{ checksum "Pipfile" }}-{{ checksum "Pipfile.lock" }}
+      - <<: *assume_role_and_save_credentials
+      - run:
+          name: Run unit tests
+          command: |
+            set -x
+
+            source .venv/bin/activate
+            make lint build unit-test
+      - <<: *persist_to_workspace_aws_envs
+
+  deploy_and_test_e2e:
+    <<: *guess_and_deploy_container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ .Branch }}-{{ checksum "Pipfile" }}-{{ checksum "Pipfile.lock" }}
+      - attach_workspace:
+          at: *workspace_aws_envs
+      - attach_workspace:
+          at: *workspace_build_artifacts
+      - <<: *deploy_to_aws
+
+  approved_deploy_and_test_e2e:
+    <<: *guess_and_deploy_container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ .Branch }}-{{ checksum "Pipfile" }}-{{ checksum "Pipfile.lock" }}
+      - attach_workspace:
+          at: *workspace_aws_envs
+      - attach_workspace:
+          at: *workspace_build_artifacts
+      - run:
+          name: Guess and save deploy envs
+          command: |
+            set -x
+
+            ./guess.sh -a
+      - <<: *assume_role_and_save_credentials
+      - <<: *deploy_to_aws
+
+workflows:
+  version: 2
+  message_notifier_workflow:
+    jobs:
+      - guess_and_save_deploy_envs:
+          filters:
+            tags:
+              only: /.*/
+      - build_and_test_unit:
+          requires:
+            - guess_and_save_deploy_envs
+          filters:
+            tags:
+              only: /.*/
+      - deploy_and_test_e2e:
+          requires:
+            - build_and_test_unit
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /v([0-9]+\.){2}[0-9]+/
+      - deploy_approve:
+          type: approval
+          requires:
+            - deploy_and_test_e2e
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /v([0-9]+\.){2}[0-9]+/
+      - approved_deploy_and_test_e2e:
+          requires:
+            - deploy_approve
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /v([0-9]+\.){2}[0-9]+/
