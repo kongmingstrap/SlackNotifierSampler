@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "logFormatter": {
+      "()": "logger.json_log_formatter.JsonLogFormatter"
+    }
+  },
+  "loggers": {
+    "console": {
+      "handlers": [
+        "consoleHandler"
+      ],
+      "level": "DEBUG"
+    },
+    "boto": {
+      "handlers": [
+        "consoleHandler"
+      ],
+      "level": "INFO"
+    },
+    "boto3": {
+      "handlers": [
+        "consoleHandler"
+      ],
+      "level": "INFO"
+    },
+    "botocore": {
+      "handlers": [
+        "consoleHandler"
+      ],
+      "level": "INFO"
+    }
+  },
+  "handlers": {
+    "consoleHandler": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "logFormatter"
+    }
+  },
+  "root": {
+    "level": "DEBUG",
+    "handlers": [
+      "consoleHandler"
+    ]
+  }
+}
