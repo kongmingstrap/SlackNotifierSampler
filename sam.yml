@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Sempler Serverless Application Model
+Description: Sampler Serverless Application Model
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:

@@ -24,8 +24,7 @@ docker image build --tag "$image_name" .
 docker container run \
   -it \
   --rm \
-  --volume ${PWD}/${template_path}:/workdir/template.yml:ro \
-  --volume ${PWD}/deploy.sh:/workdir/deploy.sh:ro \
+  --volume ${PWD}:/workdir:rw \
   --volume ${PWD}/params/${environment}.ini:/workdir/params.ini:ro \
   --volume ${HOME}/.aws:/root/.aws:rw \
   "$image_name" \

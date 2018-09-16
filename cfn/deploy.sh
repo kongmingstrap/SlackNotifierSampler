@@ -42,17 +42,12 @@ while getopts ':t:e:nlh' args; do
   esac
 done
 
-stack_name="sns-$(echo "$template_file" | sed -E 's@\.yml$@@')"
+[ -f "$template_path" ] || { echo "Invalid template file: $template_file"; exit 1; }
+
+stack_name="sns-$(echo "$template_file" | sed -E 's@\.yml$@@')-${environment}"
 profile="sns-${environment}"
 
 [ "$no_execute_change_set_flag" = true ] && extra_opts="--no-execute-changeset"
-
-pipenv run aws cloudformation validate-template \
-  --template-body "file://${template_path}" \
-  --profile "$profile"
-$(yarn bin)/cfn-lint validate "$template_path"
-
-[ "$lint_flag" = true ] && exit 0
 
 pipenv run aws cloudformation deploy \
   $extra_opts \
