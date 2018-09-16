@@ -57,6 +57,29 @@ Resources:
                 Resource:
                   - "*"
 
+  MessageNotifierRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub MessageNotifier-${Env}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: !Sub /${AWS::StackName}/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess
+        - arn:aws:iam::aws:policy/AWSIoTDataAccess
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+
 Outputs:
   SAMDeployRoleArn:
     Value: !GetAtt SAMDeployRole.Arn
+
+  MessageNotifierRoleArn:
+    Value: !GetAtt MessageNotifierRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-MessageNotifierRoleArn
