@@ -104,6 +104,15 @@ jobs:
       - attach_workspace:
           at: *workspace_build_artifacts
       - <<: *deploy_to_aws
+      - store_artifacts:
+          path: template.yml
+      - run:
+          name: Run e2e tests
+          command: |
+            set -x
+
+            source aws-envs.sh
+            make e2e-test
 
   approved_deploy_and_test_e2e:
     <<: *guess_and_deploy_container
@@ -124,6 +133,15 @@ jobs:
             ./guess.sh -a
       - <<: *assume_role_and_save_credentials
       - <<: *deploy_to_aws
+      - store_artifacts:
+          path: template.yml
+      - run:
+          name: Run e2e tests
+          command: |
+            set -x
+
+            source aws-envs.sh
+            make e2e-test
 
 workflows:
   version: 2
