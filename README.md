@@ -3,6 +3,9 @@ SlackNotifierSampler
 
 Deploy [AWS SAM](https://github.com/awslabs/serverless-application-model) with [Circle CI](https://circleci.com/?utm_source=Google&utm_medium=SEM&utm_campaign=Search%20Signup%20Branded&utm_content=Search%20Signup%20Branded-Eng-Branded-CircleCI%20(Branded)%20-%20ci&gclid=CjwKCAjw2_LcBRBYEiwA_XVBU8c3mBHwOGXR10vtzEvp0PIVvH7o0xVMppQ5roFa7EZvf8jEwE_YJhoCxG0QAvD_BwE)
 
+# Session
+<script async class="speakerdeck-embed" data-id="95839ac8ec494e43885f8f7434fcea7e" data-ratio="1.33333333333333" src="//speakerdeck.com/assets/embed.js"></script>
+
 # Requirements
 
 - [AWS CLI](https://aws.amazon.com/cli/)
